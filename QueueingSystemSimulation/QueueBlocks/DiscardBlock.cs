@@ -4,7 +4,7 @@ namespace QueueingSystemSimulation.QueueBlocks;
 
 public class DiscardBlock : WrapBlock
 {
-    public DiscardBlock(SourceQueueBlock block) : base(block)
+    public DiscardBlock(IQueueBlock block) : base(block)
     {
     }
     

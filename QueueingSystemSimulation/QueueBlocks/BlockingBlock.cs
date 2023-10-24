@@ -8,7 +8,7 @@ public class BlockingBlock : WrapBlock
 
     public bool IsBlocked => _blockedRequest != null;
 
-    public BlockingBlock(SourceQueueBlock block) : base(block)
+    public BlockingBlock(IQueueBlock block) : base(block)
     {
     }
 

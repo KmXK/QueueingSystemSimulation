@@ -2,9 +2,9 @@
 
 public abstract class WrapBlock : IQueueBlock
 {
-    public SourceQueueBlock WrappedBlock { get; private set; }
+    public IQueueBlock WrappedBlock { get; private set; }
     
-    protected WrapBlock(SourceQueueBlock block)
+    protected WrapBlock(IQueueBlock block)
     {
         WrappedBlock = block;
     }

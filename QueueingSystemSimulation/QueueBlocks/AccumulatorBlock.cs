@@ -4,10 +4,11 @@ namespace QueueingSystemSimulation.QueueBlocks;
 
 public class AccumulatorBlock : IQueueBlock
 {
-    private readonly int _capacity;
     private readonly Queue<QueueRequest> _queue;
 
     public int QueueSize => _queue.Count;
+
+    public int Capacity { get; }
 
     public AccumulatorBlock(int capacity)
     {
@@ -16,7 +17,7 @@ public class AccumulatorBlock : IQueueBlock
             throw new ArgumentOutOfRangeException(nameof(capacity));
         }
 
-        _capacity = capacity;
+        Capacity = capacity;
         _queue = new Queue<QueueRequest>(capacity);
     }
     
@@ -30,7 +31,7 @@ public class AccumulatorBlock : IQueueBlock
 
     public bool TryAcceptRequest(QueueRequest request, Func<QueueRequest, bool> tryToSendRequest)
     {
-        if (_queue.Count == _capacity)
+        if (_queue.Count == Capacity)
         {
             return false;
         }

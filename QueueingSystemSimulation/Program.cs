@@ -1,56 +1,78 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
-using QueueingSystemSimulation;
+﻿using QueueingSystemSimulation;
 using QueueingSystemSimulation.Analytics;
 using QueueingSystemSimulation.Analytics.Base;
 using QueueingSystemSimulation.QueueBlocks;
 using QueueingSystemSimulation.QueueBlocks.Base;
 
-var blocks = new List<IQueueBlock>
+const int ticksCount = 100_0000;
+
+const double requestGenerationPeriod = 4.0;
+const double requestHandleTime = 0.8;
+const double requestCost = 4;
+const double channelCost = 2;
+const double queueSlotCost = 0.3;
+
+const double tickMultiplier = 100;
+
+Console.WriteLine($"Количество каналов \u2502 Размер очереди \u2502 {"Доход", -20} \u2502 {"Расходы", -20} \u2502 {"Прибыль", 20}");
+Console.WriteLine($"───────────────────┼────────────────┼{new string('─',22)}┼{new string('─',22)}┼{new string('─',21)}");
+
+for (var i = 2; i <= 12; i++)
 {
-    new StartBlock(),
-    new BlockingBlock(new TimerSourceBlock(2)),
-    new AccumulatorBlock(2),
-    new DiscardBlock(new ProbabilitySourceBlock(0.48)),
-    new ProbabilitySourceBlock(1.0),
-    new EndBlock()
-};
-
-var analytics = new List<IAnalytics>
-{
-    // new LogAnalytics(),
-    new BandwidthAnalytics(),
-    new BlockRateAnalytics(),
-    new BusynessAnalytics(),
-    new QueueLengthAnalytics(),
-    new QueueRequestTimeAnalytics(),
-    new RequestInSystemAnalytics(),
-    new SystemRequestTimeAnalytics()
-};
-
-var system = new QueueSystem(blocks, analytics);
-
-system.Run(100_000);
-
-var indicators = new List<(string, string, Expression)>
-{
-    ("Абсолютная пропускная способность", "A", (BandwidthAnalytics a) => a.AbsoluteBandwidth),
-    ("Относительная пропускная способность", "Q", (BandwidthAnalytics a) => a.RelativeBandwidth),
-    ("Вероятность отказа", "P_отк", (BandwidthAnalytics a) => a.FailureRate),
-    ("Вероятность блокировки", "P_бл", (BlockRateAnalytics a) => a.BlockRate),
-    ("Средняя длина очереди", "L_оч", (QueueLengthAnalytics a) => a.AverageQueueLength),
-    ("Среднее число заявок в системе", "L_с", (RequestInSystemAnalytics a) => a.AverageRequestsCount),
-    ("Среднее время заявки в очереди", "W_оч", (QueueRequestTimeAnalytics a) => a.AverageRequestTimeInQueue),
-    ("Среднее время заявки в системе", "W_с", (SystemRequestTimeAnalytics a) => a.AverageRequestTimeInSystem),
-    ("Коэффициент загрузки каналов", "K_кан", (BusynessAnalytics a) =>
-        string.Join(", ", a.AverageSourceBusyness.Select(x => x.Value.ToString()))),
-};
-
-foreach (var indicator in indicators)
-{
-    var lambda = (LambdaExpression)indicator.Item3;
-    var a = analytics.First(x => x.GetType() == lambda.Parameters.First().Type);
-    var result = lambda.Compile().DynamicInvoke(a)?.ToString();
+    var channelCount = i == 3 ? 3 : 2;
+    var queueSize = i > 3 ? i - 3 : 0;
     
-    Console.WriteLine($"{indicator.Item1, 40} {"(" + indicator.Item2 + ")", -7} = {result}");
+    var blocks = GetBlocks(channelCount, queueSize);
+    
+    var analytics = new List<IAnalytics>
+    {
+        new IncomeAnalytics(requestCost),
+        new OutcomeAnalytics(channelCost / tickMultiplier, queueSlotCost / tickMultiplier)
+    };
+
+    var system = new QueueSystem(blocks, analytics);
+
+    system.Run(ticksCount);
+
+    var income = GetAnalytic<IncomeAnalytics>().Income * tickMultiplier / ticksCount;
+    var outcome = GetAnalytic<OutcomeAnalytics>().Outcome * tickMultiplier / ticksCount;
+    var profit = income - outcome;
+
+    Console.WriteLine($"{channelCount, -18} \u2502 " +
+                      $"{queueSize, -14} \u2502 " +
+                      $"{income, -20} \u2502 " +
+                      $"{outcome, -20} \u2502 " +
+                      $"{profit, 20}");
+
+    continue;
+
+    T GetAnalytic<T>() where T : IAnalytics
+    {
+        return (T)analytics.First(x => x.GetType() == typeof(T));
+    }
+}
+
+return;
+
+IEnumerable<IQueueBlock> GetBlocks(int channelCount, int queueSize)
+{
+    var blocks = new List<IQueueBlock>();
+    
+    blocks.Add(new StartBlock());
+    blocks.Add(new DiscardBlock(new ExponentialSourceBlock(requestGenerationPeriod / tickMultiplier)));
+    
+    if (queueSize > 0)
+    {
+        blocks.Add(new AccumulatorBlock(queueSize));
+    }
+
+    var channels = Enumerable
+        .Repeat(1, channelCount)
+        .Select(_ => new TimerSourceBlock((int)(requestHandleTime * tickMultiplier)));
+    
+    blocks.Add(new DiscardBlock(new UnionBlock(channels)));
+    
+    blocks.Add(new EndBlock());
+
+    return blocks;
 }
