@@ -104,6 +104,8 @@ public class LogAnalytics : Base.Analytics
                 case DiscardBlock discardBlock:
                     block = discardBlock.WrappedBlock;
                     continue;
+                case UnionBlock unionBlock:
+                    return unionBlock.Requests.Count(x => x.Value is not null).ToString();
                 case TimerSourceBlock timerSourceBlock:
                     return timerSourceBlock.RemainingTime.ToString();
                 case ProbabilitySourceBlock probabilitySourceBlock:

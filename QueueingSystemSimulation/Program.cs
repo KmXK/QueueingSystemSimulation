@@ -4,7 +4,7 @@ using QueueingSystemSimulation.Analytics.Base;
 using QueueingSystemSimulation.QueueBlocks;
 using QueueingSystemSimulation.QueueBlocks.Base;
 
-const int ticksCount = 100_0000;
+const int ticksCount = 10000;
 
 const double requestGenerationPeriod = 4.0;
 const double requestHandleTime = 0.8;
@@ -12,22 +12,23 @@ const double requestCost = 4;
 const double channelCost = 2;
 const double queueSlotCost = 0.3;
 
-const double tickMultiplier = 100;
+const double tickMultiplier = 60;
 
-Console.WriteLine($"Количество каналов \u2502 Размер очереди \u2502 {"Доход", -20} \u2502 {"Расходы", -20} \u2502 {"Прибыль", 20}");
-Console.WriteLine($"───────────────────┼────────────────┼{new string('─',22)}┼{new string('─',22)}┼{new string('─',21)}");
+Console.WriteLine($"Количество каналов \u2502 Размер очереди \u2502 {"Доход", -7} \u2502 {"Расходы", -7} \u2502 {"Прибыль", 7}");
+Console.WriteLine($"───────────────────┼────────────────┼{new string('─',9)}┼{new string('─',9)}┼{new string('─',8)}");
 
-for (var i = 2; i <= 12; i++)
+for (var i = 2; i <= 10; i++)
 {
-    var channelCount = i == 3 ? 3 : 2;
+    var channelCount = i == 3 ? i : 2;
     var queueSize = i > 3 ? i - 3 : 0;
     
     var blocks = GetBlocks(channelCount, queueSize);
     
     var analytics = new List<IAnalytics>
     {
+        // new LogAnalytics(),
         new IncomeAnalytics(requestCost),
-        new OutcomeAnalytics(channelCost / tickMultiplier, queueSlotCost / tickMultiplier)
+        new OutcomeAnalytics(channelCost, queueSlotCost)
     };
 
     var system = new QueueSystem(blocks, analytics);
@@ -35,14 +36,14 @@ for (var i = 2; i <= 12; i++)
     system.Run(ticksCount);
 
     var income = GetAnalytic<IncomeAnalytics>().Income * tickMultiplier / ticksCount;
-    var outcome = GetAnalytic<OutcomeAnalytics>().Outcome * tickMultiplier / ticksCount;
+    var outcome = GetAnalytic<OutcomeAnalytics>().Outcome / ticksCount;
     var profit = income - outcome;
 
     Console.WriteLine($"{channelCount, -18} \u2502 " +
                       $"{queueSize, -14} \u2502 " +
-                      $"{income, -20} \u2502 " +
-                      $"{outcome, -20} \u2502 " +
-                      $"{profit, 20}");
+                      $"{income, 7 : 0.####} \u2502 " +
+                      $"{outcome, 7 : 0.####} \u2502 " +
+                      $"{profit, 7 : 0.####}");
 
     continue;
 
@@ -70,7 +71,7 @@ IEnumerable<IQueueBlock> GetBlocks(int channelCount, int queueSize)
         .Repeat(1, channelCount)
         .Select(_ => new TimerSourceBlock((int)(requestHandleTime * tickMultiplier)));
     
-    blocks.Add(new DiscardBlock(new UnionBlock(channels)));
+    blocks.Add(new UnionBlock(channels));
     
     blocks.Add(new EndBlock());
 

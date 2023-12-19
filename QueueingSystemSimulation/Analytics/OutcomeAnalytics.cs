@@ -21,9 +21,8 @@ public class OutcomeAnalytics : Base.Analytics
 
     public override void AnalyzeAfterTick(TickAnalyticsContext context)
     {
-        _unionBlock ??= (context.Blocks
-                .First(x => x is DiscardBlock { WrappedBlock: UnionBlock }) as DiscardBlock)!
-            .WrappedBlock as UnionBlock;
+        _unionBlock ??= context.Blocks
+                .First(x => x is UnionBlock) as UnionBlock;
 
         _queue ??= context.Blocks.FirstOrDefault(x => x is AccumulatorBlock) as AccumulatorBlock;
         

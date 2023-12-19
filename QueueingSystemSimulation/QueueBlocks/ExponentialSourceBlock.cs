@@ -5,7 +5,7 @@ namespace QueueingSystemSimulation.QueueBlocks;
 public class ExponentialSourceBlock : SourceQueueBlock
 {
     private readonly double _rate;
-    private readonly Random _random = new(4);
+    private readonly Random _random = new();
     
     private int _timeLeft;
 
@@ -34,10 +34,5 @@ public class ExponentialSourceBlock : SourceQueueBlock
                 processRequest();
             }
         }
-    }
-
-    private static bool CompareDouble(double d1, double d2)
-    {
-        return Math.Abs(d1 - d2) < 0.001;
     }
 }

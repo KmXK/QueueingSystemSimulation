@@ -6,6 +6,8 @@ public class UnionBlock : IQueueBlock
 {
     private readonly Dictionary<IQueueBlock, QueueRequest?> _requests = new();
 
+    public IReadOnlyDictionary<IQueueBlock, QueueRequest?> Requests => _requests;
+    
     public int BlocksCount => _requests.Count;
 
     public UnionBlock(params IQueueBlock[] blocks) : this((IEnumerable<IQueueBlock>)blocks)
